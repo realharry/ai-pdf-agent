@@ -1,4 +1,6 @@
 // Content script for AI PDF Agent Chrome extension
+(function() {
+'use strict';
 
 let pdfUrl: string | null = null;
 
@@ -179,5 +181,7 @@ if (document.readyState === 'loading') {
 } else {
   init();
 }
+
+})(); // End IIFE
 
 export {};

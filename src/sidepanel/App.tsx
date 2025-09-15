@@ -54,9 +54,12 @@ const App: React.FC = () => {
       const response = await chrome.runtime.sendMessage({ type: 'GET_PDF_DATA' });
       
       if (response.success && response.data) {
-        // Create a new ArrayBuffer from the array data to avoid detached buffer issues
+        // Create a proper ArrayBuffer from the array data to avoid detached buffer issues  
         const uint8Array = new Uint8Array(response.data);
-        const arrayBuffer = uint8Array.buffer.slice(uint8Array.byteOffset, uint8Array.byteOffset + uint8Array.byteLength);
+        const arrayBuffer = new ArrayBuffer(uint8Array.length);
+        const view = new Uint8Array(arrayBuffer);
+        view.set(uint8Array);
+        
         const pdfDocument = await PDFProcessor.loadPDFDocument(arrayBuffer);
         
         setState(prev => ({

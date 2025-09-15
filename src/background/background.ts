@@ -54,8 +54,17 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           console.log('Content script injection result:', injectionError);
         }
         
-        // Now try to send the message
-        return chrome.tabs.sendMessage(tabId, { type: 'CHECK_PDF' });
+        // Now try to send the message with timeout and error handling
+        return new Promise((resolve) => {
+          chrome.tabs.sendMessage(tabId, { type: 'CHECK_PDF' }, (response) => {
+            if (chrome.runtime.lastError) {
+              console.log('No content script response, assuming no PDF:', chrome.runtime.lastError.message);
+              resolve({ isPDF: false, url: null, error: 'Content script not responding' });
+            } else {
+              resolve(response);
+            }
+          });
+        });
       })
       .then(response => {
         console.log('CHECK_PDF response:', response);
@@ -92,7 +101,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           console.log('Content script injection result:', injectionError);
         }
         
-        return chrome.tabs.sendMessage(tabId, { type: 'EXTRACT_PDF_DATA' });
+        return new Promise((resolve) => {
+          chrome.tabs.sendMessage(tabId, { type: 'EXTRACT_PDF_DATA' }, (response) => {
+            if (chrome.runtime.lastError) {
+              console.log('No content script response for PDF data:', chrome.runtime.lastError.message);
+              resolve({ success: false, error: 'Content script not responding' });
+            } else {
+              resolve(response);
+            }
+          });
+        });
       })
       .then(response => {
         console.log('GET_PDF_DATA response received');
