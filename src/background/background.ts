@@ -22,19 +22,49 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // Could enable extension icon or show notification
   }
   
+  if (request.type === 'CHECK_PDF') {
+    // Forward message to content script to check for PDF
+    // Get the active tab since the message comes from sidepanel
+    chrome.tabs.query({ active: true, currentWindow: true })
+      .then(tabs => {
+        if (tabs[0]?.id) {
+          console.log('Sending CHECK_PDF to tab:', tabs[0].id);
+          return chrome.tabs.sendMessage(tabs[0].id, { type: 'CHECK_PDF' });
+        } else {
+          throw new Error('No active tab found');
+        }
+      })
+      .then(response => {
+        console.log('CHECK_PDF response:', response);
+        sendResponse(response);
+      })
+      .catch(error => {
+        console.error('CHECK_PDF error:', error);
+        sendResponse({ error: error.message, isPDF: false, url: null });
+      });
+    return true; // Will respond asynchronously
+  }
+  
   if (request.type === 'GET_PDF_DATA') {
     // Forward message to content script to get PDF data
     // Get the active tab since the message comes from sidepanel
     chrome.tabs.query({ active: true, currentWindow: true })
       .then(tabs => {
         if (tabs[0]?.id) {
+          console.log('Sending EXTRACT_PDF_DATA to tab:', tabs[0].id);
           return chrome.tabs.sendMessage(tabs[0].id, { type: 'EXTRACT_PDF_DATA' });
         } else {
           throw new Error('No active tab found');
         }
       })
-      .then(response => sendResponse(response))
-      .catch(error => sendResponse({ error: error.message }));
+      .then(response => {
+        console.log('GET_PDF_DATA response received');
+        sendResponse(response);
+      })
+      .catch(error => {
+        console.error('GET_PDF_DATA error:', error);
+        sendResponse({ error: error.message });
+      });
     return true; // Will respond asynchronously
   }
 });

@@ -44,6 +44,7 @@ async function fetchPDFData(url: string): Promise<ArrayBuffer> {
 
 // Initialize content script
 function init() {
+  console.log('Content script initializing on:', location.href);
   if (isPDFPage()) {
     pdfUrl = getPDFUrl();
     console.log('PDF detected:', pdfUrl);
@@ -53,11 +54,15 @@ function init() {
       type: 'PDF_DETECTED',
       url: pdfUrl
     });
+  } else {
+    console.log('No PDF detected on this page');
   }
 }
 
 // Listen for messages from background/side panel
 chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
+  console.log('Content script received message:', request.type);
+  
   if (request.type === 'EXTRACT_PDF_DATA') {
     if (pdfUrl) {
       fetchPDFData(pdfUrl)
@@ -69,6 +74,7 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
           });
         })
         .catch(error => {
+          console.error('Error fetching PDF data:', error);
           sendResponse({
             success: false,
             error: error.message
@@ -84,8 +90,14 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
   }
   
   if (request.type === 'CHECK_PDF') {
+    // Re-check for PDF in case it wasn't detected initially
+    if (!pdfUrl) {
+      pdfUrl = getPDFUrl();
+    }
+    const isPDF = isPDFPage();
+    console.log('CHECK_PDF response:', { isPDF, url: pdfUrl });
     sendResponse({
-      isPDF: isPDFPage(),
+      isPDF: isPDF,
       url: pdfUrl
     });
   }

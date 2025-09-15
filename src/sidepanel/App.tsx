@@ -27,12 +27,7 @@ const App: React.FC = () => {
     setState(prev => ({ ...prev, isLoading: true, error: null }));
     
     try {
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      if (!tab.id) {
-        throw new Error('No active tab found');
-      }
-
-      const response = await chrome.tabs.sendMessage(tab.id, { type: 'CHECK_PDF' });
+      const response = await chrome.runtime.sendMessage({ type: 'CHECK_PDF' });
       
       if (response.isPDF && response.url) {
         await loadPDF();
