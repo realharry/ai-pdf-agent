@@ -29,12 +29,6 @@ export default defineConfig({
           }
           return 'sidepanel/[name].[hash].js'
         },
-        assetFileNames: (assetInfo) => {
-          if (assetInfo.name?.endsWith('.html')) {
-            return 'sidepanel/index.html'
-          }
-          return 'assets/[name].[hash].[ext]'
-        }
       },
     },
   },

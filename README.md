@@ -42,6 +42,8 @@ npm install
 npm run build
 ```
 
+**Note**: You may see a Tailwind CSS warning about `bg-background` during the build. This is expected and doesn't affect functionality. The build process includes a post-build script that correctly positions all files for the Chrome extension.
+
 4. Load the extension in Chrome:
    - Open Chrome and navigate to `chrome://extensions/`
    - Enable "Developer mode" in the top right
