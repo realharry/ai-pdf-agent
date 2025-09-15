@@ -55,10 +55,18 @@ const App: React.FC = () => {
       
       if (response.success && response.data) {
         // Create a proper ArrayBuffer from the array data to avoid detached buffer issues  
-        const uint8Array = new Uint8Array(response.data);
-        const arrayBuffer = new ArrayBuffer(uint8Array.length);
-        const view = new Uint8Array(arrayBuffer);
-        view.set(uint8Array);
+        let arrayBuffer: ArrayBuffer;
+        
+        if (response.data instanceof ArrayBuffer) {
+          // If it's already an ArrayBuffer, create a copy to avoid detached buffer issues
+          arrayBuffer = response.data.slice(0);
+        } else if (Array.isArray(response.data)) {
+          // Convert from regular array to ArrayBuffer
+          const uint8Array = new Uint8Array(response.data);
+          arrayBuffer = uint8Array.buffer.slice(uint8Array.byteOffset, uint8Array.byteOffset + uint8Array.byteLength);
+        } else {
+          throw new Error('Invalid PDF data format received');
+        }
         
         const pdfDocument = await PDFProcessor.loadPDFDocument(arrayBuffer);
         

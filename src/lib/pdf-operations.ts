@@ -7,10 +7,26 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = chrome.runtime.getURL('pdf.worker.min.j
 
 // Helper function to create a proper ArrayBuffer from Uint8Array
 function createArrayBuffer(uint8Array: Uint8Array): ArrayBuffer {
+  // Create a new ArrayBuffer and copy the data to prevent detached buffer issues
   const arrayBuffer = new ArrayBuffer(uint8Array.length);
   const view = new Uint8Array(arrayBuffer);
   view.set(uint8Array);
   return arrayBuffer;
+}
+
+// Helper function to ensure we have a valid ArrayBuffer
+function ensureValidArrayBuffer(data: ArrayBuffer): ArrayBuffer {
+  try {
+    // Try to access the byteLength to check if the buffer is detached
+    const length = data.byteLength;
+    if (length === 0) {
+      throw new Error('Empty ArrayBuffer');
+    }
+    return data;
+  } catch (error) {
+    // If the buffer is detached, we can't recover it
+    throw new Error('ArrayBuffer is detached and cannot be used');
+  }
 }
 
 export class PDFProcessor {
@@ -45,7 +61,8 @@ export class PDFProcessor {
   
   static async splitPDF(data: ArrayBuffer, pageRanges: number[][]): Promise<OperationResult[]> {
     try {
-      const pdfDoc = await PDFDocument.load(data);
+      const validData = ensureValidArrayBuffer(data);
+      const pdfDoc = await PDFDocument.load(validData);
       const results: OperationResult[] = [];
       
       for (let i = 0; i < pageRanges.length; i++) {
@@ -79,7 +96,8 @@ export class PDFProcessor {
   
   static async deletePages(data: ArrayBuffer, pagesToDelete: number[]): Promise<OperationResult> {
     try {
-      const pdfDoc = await PDFDocument.load(data);
+      const validData = ensureValidArrayBuffer(data);
+      const pdfDoc = await PDFDocument.load(validData);
       const totalPages = pdfDoc.getPageCount();
       
       // Sort in descending order to avoid index issues when removing
@@ -108,7 +126,8 @@ export class PDFProcessor {
   
   static async reorderPages(data: ArrayBuffer, newOrder: number[]): Promise<OperationResult> {
     try {
-      const pdfDoc = await PDFDocument.load(data);
+      const validData = ensureValidArrayBuffer(data);
+      const pdfDoc = await PDFDocument.load(validData);
       const newDoc = await PDFDocument.create();
       
       for (const pageNum of newOrder) {
@@ -138,7 +157,8 @@ export class PDFProcessor {
       const mergedDoc = await PDFDocument.create();
       
       for (const data of documents) {
-        const pdfDoc = await PDFDocument.load(data);
+        const validData = ensureValidArrayBuffer(data);
+        const pdfDoc = await PDFDocument.load(validData);
         const pageCount = pdfDoc.getPageCount();
         const pageIndices = Array.from(Array(pageCount).keys());
         
@@ -163,7 +183,8 @@ export class PDFProcessor {
   
   static async extractPages(data: ArrayBuffer, pageNumbers: number[]): Promise<OperationResult> {
     try {
-      const pdfDoc = await PDFDocument.load(data);
+      const validData = ensureValidArrayBuffer(data);
+      const pdfDoc = await PDFDocument.load(validData);
       const newDoc = await PDFDocument.create();
       
       for (const pageNum of pageNumbers) {
