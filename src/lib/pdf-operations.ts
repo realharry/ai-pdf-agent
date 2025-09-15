@@ -5,6 +5,14 @@ import { PDFDocument as PDFDocumentType, PDFPageInfo, OperationResult } from '..
 // Configure pdf.js worker to use bundled worker
 pdfjsLib.GlobalWorkerOptions.workerSrc = chrome.runtime.getURL('pdf.worker.min.js');
 
+// Helper function to create a proper ArrayBuffer from Uint8Array
+function createArrayBuffer(uint8Array: Uint8Array): ArrayBuffer {
+  const arrayBuffer = new ArrayBuffer(uint8Array.length);
+  const view = new Uint8Array(arrayBuffer);
+  view.set(uint8Array);
+  return arrayBuffer;
+}
+
 export class PDFProcessor {
   
   static async loadPDFDocument(data: ArrayBuffer): Promise<PDFDocumentType> {
@@ -54,7 +62,7 @@ export class PDFProcessor {
         const pdfBytes = await newDoc.save();
         results.push({
           success: true,
-          data: pdfBytes.buffer.slice(0) as ArrayBuffer,
+          data: createArrayBuffer(pdfBytes),
           filename: `split_part_${i + 1}.pdf`
         });
       }
@@ -86,7 +94,7 @@ export class PDFProcessor {
       const pdfBytes = await pdfDoc.save();
       return {
         success: true,
-        data: pdfBytes.buffer.slice(0) as ArrayBuffer,
+        data: createArrayBuffer(pdfBytes),
         filename: 'pages_deleted.pdf'
       };
     } catch (error) {
@@ -113,7 +121,7 @@ export class PDFProcessor {
       const pdfBytes = await newDoc.save();
       return {
         success: true,
-        data: pdfBytes.buffer.slice(0) as ArrayBuffer,
+        data: createArrayBuffer(pdfBytes),
         filename: 'reordered.pdf'
       };
     } catch (error) {
@@ -141,7 +149,7 @@ export class PDFProcessor {
       const pdfBytes = await mergedDoc.save();
       return {
         success: true,
-        data: pdfBytes.buffer.slice(0) as ArrayBuffer,
+        data: createArrayBuffer(pdfBytes),
         filename: 'merged.pdf'
       };
     } catch (error) {
@@ -168,7 +176,7 @@ export class PDFProcessor {
       const pdfBytes = await newDoc.save();
       return {
         success: true,
-        data: pdfBytes.buffer.slice(0) as ArrayBuffer,
+        data: createArrayBuffer(pdfBytes),
         filename: 'extracted_pages.pdf'
       };
     } catch (error) {

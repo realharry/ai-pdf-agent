@@ -20,7 +20,7 @@
       "@/*": ["./src/*"]
     },
     "typeRoots": ["./node_modules/@types"],
-    "types": ["chrome", "node", "react", "react-dom"]
+    "types": ["chrome"]
   },
   "include": ["src/**/*"],
   "references": [{ "path": "./tsconfig.node.json" }]
