@@ -7,7 +7,7 @@ export interface PDFPageInfo {
 
 export interface PDFDocument {
   pages: PDFPageInfo[];
-  data: ArrayBuffer;
+  data: Uint8Array; // Store as Uint8Array to prevent ArrayBuffer detachment
   url?: string;
   filename?: string;
 }

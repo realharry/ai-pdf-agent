@@ -56,7 +56,7 @@ export class PDFProcessor {
       
       return {
         pages,
-        data,
+        data: new Uint8Array(data), // Store as Uint8Array to prevent detachment
         filename: 'document.pdf'
       };
     } catch (error) {

@@ -19,6 +19,14 @@ const App: React.FC = () => {
   const [selectedPages, setSelectedPages] = useState<string>('');
   const [reorderPages, setReorderPages] = useState<string>('');
 
+  // Helper function to create a fresh ArrayBuffer from Uint8Array data
+  const createArrayBufferFromData = (uint8ArrayData: Uint8Array): ArrayBuffer => {
+    const arrayBuffer = new ArrayBuffer(uint8ArrayData.length);
+    const view = new Uint8Array(arrayBuffer);
+    view.set(uint8ArrayData);
+    return arrayBuffer;
+  };
+
   useEffect(() => {
     checkForPDF();
   }, []);
@@ -54,31 +62,33 @@ const App: React.FC = () => {
       const response = await chrome.runtime.sendMessage({ type: 'GET_PDF_DATA' });
       
       if (response.success && response.data) {
-        // Create a fresh ArrayBuffer from the array data to prevent detached buffer issues
-        let arrayBuffer: ArrayBuffer;
+        // Store data as Uint8Array to prevent ArrayBuffer detachment issues
+        let uint8ArrayData: Uint8Array;
         
         if (Array.isArray(response.data)) {
-          // Convert from regular array to ArrayBuffer
-          const uint8Array = new Uint8Array(response.data);
-          // Create a new ArrayBuffer and copy the data
-          arrayBuffer = new ArrayBuffer(uint8Array.length);
-          const view = new Uint8Array(arrayBuffer);
-          view.set(uint8Array);
+          // Convert from regular array to Uint8Array
+          uint8ArrayData = new Uint8Array(response.data);
         } else if (response.data instanceof ArrayBuffer) {
-          // If it's already an ArrayBuffer, create a fresh copy
-          const uint8Array = new Uint8Array(response.data);
-          arrayBuffer = new ArrayBuffer(uint8Array.length);
-          const view = new Uint8Array(arrayBuffer);
-          view.set(uint8Array);
+          // Convert ArrayBuffer to Uint8Array
+          uint8ArrayData = new Uint8Array(response.data);
         } else {
           throw new Error('Invalid PDF data format received');
         }
         
-        const pdfDocument = await PDFProcessor.loadPDFDocument(arrayBuffer);
+        // Create a temporary ArrayBuffer for loading the PDF document
+        const tempArrayBuffer = new ArrayBuffer(uint8ArrayData.length);
+        const tempView = new Uint8Array(tempArrayBuffer);
+        tempView.set(uint8ArrayData);
         
+        const pdfDocument = await PDFProcessor.loadPDFDocument(tempArrayBuffer);
+        
+        // Store the data as Uint8Array instead of ArrayBuffer to prevent detachment
         setState(prev => ({
           ...prev,
-          currentPDF: pdfDocument,
+          currentPDF: {
+            ...pdfDocument,
+            data: uint8ArrayData // Store as Uint8Array
+          },
           isLoading: false
         }));
       } else {
@@ -131,7 +141,9 @@ const App: React.FC = () => {
         throw new Error('Please enter valid page numbers');
       }
       
-      const results = await PDFProcessor.splitPDF(state.currentPDF.data, [pages]);
+      // Create a fresh ArrayBuffer from the stored Uint8Array data
+      const arrayBuffer = createArrayBufferFromData(state.currentPDF.data);
+      const results = await PDFProcessor.splitPDF(arrayBuffer, [pages]);
       
       if (results[0].success && results[0].data) {
         const filename = generateFilename('split', 'pages');
@@ -160,7 +172,9 @@ const App: React.FC = () => {
         throw new Error('Please enter valid page numbers to delete');
       }
       
-      const result = await PDFProcessor.deletePages(state.currentPDF.data, pages);
+      // Create a fresh ArrayBuffer from the stored Uint8Array data
+      const arrayBuffer = createArrayBufferFromData(state.currentPDF.data);
+      const result = await PDFProcessor.deletePages(arrayBuffer, pages);
       
       if (result.success && result.data) {
         const filename = generateFilename('modified', 'deleted_pages');
@@ -189,7 +203,9 @@ const App: React.FC = () => {
         throw new Error('Please enter valid page order');
       }
       
-      const result = await PDFProcessor.reorderPages(state.currentPDF.data, pages);
+      // Create a fresh ArrayBuffer from the stored Uint8Array data
+      const arrayBuffer = createArrayBufferFromData(state.currentPDF.data);
+      const result = await PDFProcessor.reorderPages(arrayBuffer, pages);
       
       if (result.success && result.data) {
         const filename = generateFilename('reordered', 'pages');
@@ -218,7 +234,9 @@ const App: React.FC = () => {
         throw new Error('Please enter valid page numbers to extract');
       }
       
-      const result = await PDFProcessor.extractPages(state.currentPDF.data, pages);
+      // Create a fresh ArrayBuffer from the stored Uint8Array data
+      const arrayBuffer = createArrayBufferFromData(state.currentPDF.data);
+      const result = await PDFProcessor.extractPages(arrayBuffer, pages);
       
       if (result.success && result.data) {
         const filename = generateFilename('extracted', 'pages');
@@ -295,7 +313,7 @@ const App: React.FC = () => {
             PDF Document
           </CardTitle>
           <CardDescription>
-            {state.currentPDF.pages.length} pages • {formatFileSize(state.currentPDF.data.byteLength)}
+            {state.currentPDF.pages.length} pages • {formatFileSize(state.currentPDF.data.length)}
           </CardDescription>
         </CardHeader>
       </Card>
