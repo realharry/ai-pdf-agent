@@ -22,9 +22,15 @@ function ensureValidArrayBuffer(data: ArrayBuffer): ArrayBuffer {
     if (length === 0) {
       throw new Error('Empty ArrayBuffer');
     }
-    return data;
+    
+    // Create a fresh copy to ensure it's not detached
+    const uint8Array = new Uint8Array(data);
+    const newBuffer = new ArrayBuffer(uint8Array.length);
+    const newView = new Uint8Array(newBuffer);
+    newView.set(uint8Array);
+    return newBuffer;
   } catch (error) {
-    // If the buffer is detached, we can't recover it
+    // If the buffer is detached or there's an error, we can't recover it
     throw new Error('ArrayBuffer is detached and cannot be used');
   }
 }

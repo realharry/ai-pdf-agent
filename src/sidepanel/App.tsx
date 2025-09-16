@@ -54,16 +54,22 @@ const App: React.FC = () => {
       const response = await chrome.runtime.sendMessage({ type: 'GET_PDF_DATA' });
       
       if (response.success && response.data) {
-        // Create a proper ArrayBuffer from the array data to avoid detached buffer issues  
+        // Create a fresh ArrayBuffer from the array data to prevent detached buffer issues
         let arrayBuffer: ArrayBuffer;
         
-        if (response.data instanceof ArrayBuffer) {
-          // If it's already an ArrayBuffer, create a copy to avoid detached buffer issues
-          arrayBuffer = response.data.slice(0);
-        } else if (Array.isArray(response.data)) {
+        if (Array.isArray(response.data)) {
           // Convert from regular array to ArrayBuffer
           const uint8Array = new Uint8Array(response.data);
-          arrayBuffer = uint8Array.buffer.slice(uint8Array.byteOffset, uint8Array.byteOffset + uint8Array.byteLength);
+          // Create a new ArrayBuffer and copy the data
+          arrayBuffer = new ArrayBuffer(uint8Array.length);
+          const view = new Uint8Array(arrayBuffer);
+          view.set(uint8Array);
+        } else if (response.data instanceof ArrayBuffer) {
+          // If it's already an ArrayBuffer, create a fresh copy
+          const uint8Array = new Uint8Array(response.data);
+          arrayBuffer = new ArrayBuffer(uint8Array.length);
+          const view = new Uint8Array(arrayBuffer);
+          view.set(uint8Array);
         } else {
           throw new Error('Invalid PDF data format received');
         }
@@ -335,10 +341,20 @@ const App: React.FC = () => {
             Delete Pages
           </CardTitle>
           <CardDescription>
-            Remove specific pages from the PDF
+            Enter page numbers to remove from the PDF (e.g., "1,3,5-8")
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
+          <div>
+            <Label htmlFor="delete-pages">Page Numbers to Delete</Label>
+            <Input
+              id="delete-pages"
+              value={selectedPages}
+              onChange={(e) => setSelectedPages(e.target.value)}
+              placeholder="1,3,5-8"
+              className="mt-1"
+            />
+          </div>
           <Button onClick={handleDeletePages} variant="destructive" className="w-full">
             <Trash2 className="mr-2 h-4 w-4" />
             Delete Selected Pages
