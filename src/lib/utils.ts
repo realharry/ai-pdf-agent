@@ -1,5 +1,6 @@
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
+import JSZip from "jszip"
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -11,6 +12,28 @@ export function downloadFile(data: ArrayBuffer, filename: string, mimeType: stri
   const a = document.createElement('a');
   a.href = url;
   a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+export async function downloadZipFile(files: { name: string; data: ArrayBuffer }[], zipFilename: string) {
+  const zip = new JSZip();
+  
+  // Add each file to the zip
+  files.forEach(file => {
+    zip.file(file.name, file.data);
+  });
+  
+  // Generate the zip file
+  const zipData = await zip.generateAsync({ type: "blob" });
+  
+  // Download the zip file
+  const url = URL.createObjectURL(zipData);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = zipFilename;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);

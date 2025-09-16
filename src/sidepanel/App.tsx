@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PDFProcessor } from '@/lib/pdf-operations';
 import { SidePanelState } from '@/types';
-import { downloadFile, generateFilename, formatFileSize } from '@/lib/utils';
+import { downloadFile, generateFilename, formatFileSize, downloadZipFile } from '@/lib/utils';
 import { FileText, Download, Scissors, Trash2, ArrowUpDown } from 'lucide-react';
 
 const App: React.FC = () => {
@@ -123,26 +123,32 @@ const App: React.FC = () => {
   };
 
   const handleSplitPDF = async () => {
-    if (!state.currentPDF || !selectedPages.trim()) return;
+    if (!state.currentPDF) return;
     
     setState(prev => ({ ...prev, isLoading: true }));
     
     try {
-      const pages = parsePageNumbers(selectedPages);
-      if (pages.length === 0) {
-        throw new Error('Please enter valid page numbers');
-      }
-      
       // Create a fresh ArrayBuffer from the stored Uint8Array data
       const arrayBuffer = createArrayBufferFromData(state.currentPDF.data);
-      const results = await PDFProcessor.splitPDF(arrayBuffer, [pages]);
+      const results = await PDFProcessor.splitPDFIntoPages(arrayBuffer);
       
-      if (results[0].success && results[0].data) {
-        const filename = generateFilename('split', 'pages');
-        downloadFile(results[0].data, filename);
-      } else {
-        throw new Error(results[0].error || 'Failed to split PDF');
+      // Filter successful results
+      const successfulResults = results.filter(result => result.success && result.data);
+      
+      if (successfulResults.length === 0) {
+        throw new Error('Failed to split PDF into pages');
       }
+      
+      // Prepare files for zip download
+      const files = successfulResults.map(result => ({
+        name: result.filename || 'page.pdf',
+        data: result.data!
+      }));
+      
+      // Download as zip file
+      const zipFilename = generateFilename('split', 'all_pages', 'zip');
+      await downloadZipFile(files, zipFilename);
+      
     } catch (error) {
       setState(prev => ({
         ...prev,
@@ -314,10 +320,28 @@ const App: React.FC = () => {
         <CardHeader>
           <CardTitle className="flex items-center">
             <Scissors className="mr-2 h-5 w-5" />
-            Split & Extract Pages
+            Split PDF
           </CardTitle>
           <CardDescription>
-            Enter page numbers (e.g., "1,3,5-8") to split or extract
+            Split PDF into individual pages (one PDF per page) and download as zip
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button onClick={handleSplitPDF} className="w-full" disabled={state.isLoading}>
+            <Scissors className="mr-2 h-4 w-4" />
+            Split Into Individual Pages
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <Download className="mr-2 h-5 w-5" />
+            Extract Pages
+          </CardTitle>
+          <CardDescription>
+            Enter page numbers (e.g., "1,3,5-8") to extract into a single PDF
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -331,16 +355,10 @@ const App: React.FC = () => {
               className="mt-1"
             />
           </div>
-          <div className="flex space-x-2">
-            <Button onClick={handleSplitPDF} className="flex-1">
-              <Scissors className="mr-2 h-4 w-4" />
-              Split
-            </Button>
-            <Button onClick={handleExtractPages} variant="outline" className="flex-1">
-              <Download className="mr-2 h-4 w-4" />
-              Extract
-            </Button>
-          </div>
+          <Button onClick={handleExtractPages} className="w-full" disabled={state.isLoading || !selectedPages.trim()}>
+            <Download className="mr-2 h-4 w-4" />
+            Extract Selected Pages
+          </Button>
         </CardContent>
       </Card>
 

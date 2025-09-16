@@ -70,6 +70,37 @@ export class PDFProcessor {
     }
   }
   
+  static async splitPDFIntoPages(data: ArrayBuffer): Promise<OperationResult[]> {
+    try {
+      const validData = ensureValidArrayBuffer(data);
+      const pdfDoc = await PDFDocument.load(validData);
+      const totalPages = pdfDoc.getPageCount();
+      const results: OperationResult[] = [];
+      
+      // Create one PDF for each page
+      for (let pageIndex = 0; pageIndex < totalPages; pageIndex++) {
+        const newDoc = await PDFDocument.create();
+        const [copiedPage] = await newDoc.copyPages(pdfDoc, [pageIndex]);
+        newDoc.addPage(copiedPage);
+        
+        const pdfBytes = await newDoc.save();
+        results.push({
+          success: true,
+          data: createArrayBuffer(pdfBytes),
+          filename: `page_${pageIndex + 1}.pdf`
+        });
+      }
+      
+      return results;
+    } catch (error) {
+      console.error('Error splitting PDF into pages:', error);
+      return [{
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to split PDF into pages'
+      }];
+    }
+  }
+  
   static async splitPDF(data: ArrayBuffer, pageRanges: number[][]): Promise<OperationResult[]> {
     try {
       const validData = ensureValidArrayBuffer(data);
