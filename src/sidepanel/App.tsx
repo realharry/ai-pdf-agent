@@ -75,20 +75,12 @@ const App: React.FC = () => {
           throw new Error('Invalid PDF data format received');
         }
         
-        // Create a temporary ArrayBuffer for loading the PDF document
-        const tempArrayBuffer = new ArrayBuffer(uint8ArrayData.length);
-        const tempView = new Uint8Array(tempArrayBuffer);
-        tempView.set(uint8ArrayData);
+        // Call loadPDFDocument with Uint8Array data
+        const pdfDocument = await PDFProcessor.loadPDFDocument(uint8ArrayData);
         
-        const pdfDocument = await PDFProcessor.loadPDFDocument(tempArrayBuffer);
-        
-        // Store the data as Uint8Array instead of ArrayBuffer to prevent detachment
         setState(prev => ({
           ...prev,
-          currentPDF: {
-            ...pdfDocument,
-            data: uint8ArrayData // Store as Uint8Array
-          },
+          currentPDF: pdfDocument,
           isLoading: false
         }));
       } else {

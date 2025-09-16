@@ -37,9 +37,14 @@ function ensureValidArrayBuffer(data: ArrayBuffer): ArrayBuffer {
 
 export class PDFProcessor {
   
-  static async loadPDFDocument(data: ArrayBuffer): Promise<PDFDocumentType> {
+  static async loadPDFDocument(data: Uint8Array): Promise<PDFDocumentType> {
     try {
-      const loadingTask = pdfjsLib.getDocument({ data });
+      // Create a temporary ArrayBuffer only for PDF.js library usage
+      const tempArrayBuffer = new ArrayBuffer(data.length);
+      const tempView = new Uint8Array(tempArrayBuffer);
+      tempView.set(data);
+      
+      const loadingTask = pdfjsLib.getDocument({ data: tempArrayBuffer });
       const pdfDoc = await loadingTask.promise;
       
       const pages: PDFPageInfo[] = [];
@@ -56,7 +61,7 @@ export class PDFProcessor {
       
       return {
         pages,
-        data: new Uint8Array(data), // Store as Uint8Array to prevent detachment
+        data: data, // Store the original Uint8Array data
         filename: 'document.pdf'
       };
     } catch (error) {
