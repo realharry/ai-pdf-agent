@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Icon Generator</title>
+</head>
+<body>
+    <canvas id="canvas16" width="16" height="16"></canvas>
+    <canvas id="canvas32" width="32" height="32"></canvas>
+    <canvas id="canvas48" width="48" height="48"></canvas>
+    <canvas id="canvas128" width="128" height="128"></canvas>
+
+    <script>
+        function createIcon(size) {
+            const canvas = document.getElementById(`canvas${size}`);
+            const ctx = canvas.getContext('2d');
+            
+            // Background
+            ctx.fillStyle = '#2563eb'; // Blue background
+            ctx.fillRect(0, 0, size, size);
+            
+            // PDF icon shape
+            ctx.fillStyle = '#ffffff';
+            const padding = size * 0.1;
+            const iconSize = size - (padding * 2);
+            
+            // Document shape
+            ctx.fillRect(padding, padding, iconSize * 0.7, iconSize);
+            
+            // Folded corner
+            ctx.fillStyle = '#e5e7eb';
+            ctx.beginPath();
+            ctx.moveTo(padding + iconSize * 0.7, padding);
+            ctx.lineTo(padding + iconSize, padding + iconSize * 0.3);
+            ctx.lineTo(padding + iconSize * 0.7, padding + iconSize * 0.3);
+            ctx.closePath();
+            ctx.fill();
+            
+            // PDF text
+            if (size >= 32) {
+                ctx.fillStyle = '#2563eb';
+                ctx.font = `${size * 0.15}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.fillText('PDF', size/2, size * 0.7);
+            }
+            
+            // Download as PNG
+            const link = document.createElement('a');
+            link.download = `icon${size}.png`;
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+        
+        // Generate all sizes
+        setTimeout(() => {
+            [16, 32, 48, 128].forEach(size => createIcon(size));
+        }, 100);
+    </script>
+</body>
+</html>
