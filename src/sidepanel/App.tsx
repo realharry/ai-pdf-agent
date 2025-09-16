@@ -122,6 +122,34 @@ const App: React.FC = () => {
     return [...new Set(pages)].sort((a, b) => a - b);
   };
 
+  const parsePageOrder = (input: string): number[] => {
+    if (!input.trim()) return [];
+    
+    const ranges = input.split(',').map(s => s.trim());
+    const pages: number[] = [];
+    
+    for (const range of ranges) {
+      if (range.includes('-')) {
+        const [start, end] = range.split('-').map(n => parseInt(n.trim(), 10));
+        if (!isNaN(start) && !isNaN(end)) {
+          for (let i = Math.min(start, end); i <= Math.max(start, end); i++) {
+            if (i > 0 && i <= (state.currentPDF?.pages.length || 0)) {
+              pages.push(i);
+            }
+          }
+        }
+      } else {
+        const pageNum = parseInt(range, 10);
+        if (!isNaN(pageNum) && pageNum > 0 && pageNum <= (state.currentPDF?.pages.length || 0)) {
+          pages.push(pageNum);
+        }
+      }
+    }
+    
+    // For reordering, preserve the order specified by the user (don't sort)
+    return pages;
+  };
+
   const handleSplitPDF = async () => {
     if (!state.currentPDF) return;
     
@@ -196,7 +224,7 @@ const App: React.FC = () => {
     setState(prev => ({ ...prev, isLoading: true }));
     
     try {
-      const pages = parsePageNumbers(reorderPages);
+      const pages = parsePageOrder(reorderPages);
       if (pages.length === 0) {
         throw new Error('Please enter valid page order');
       }
